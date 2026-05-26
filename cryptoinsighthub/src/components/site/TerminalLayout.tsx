@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Link } from "@tanstack/react-router";
+import { NavLink } from "react-router-dom";
 import { Header } from "./Header";
 import { Footer } from "./Footer";
 import { LayoutGrid, GraduationCap, Star, Users, Settings } from "lucide-react";
@@ -19,6 +19,15 @@ const sidebarLinks: NavItem[] = [
   { to: "/analysis", label: "Community", icon: Users, soon: true },
 ];
 
+const sidebarLinkClass = (isActive: boolean, soon?: boolean) =>
+  `flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition hover:bg-surface-2/60 hover:text-foreground ${
+    soon ? "opacity-50" : ""
+  } ${
+    isActive
+      ? "bg-primary/10 text-primary border border-primary/30"
+      : "text-muted-foreground"
+  }`;
+
 export function TerminalLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
@@ -34,18 +43,17 @@ export function TerminalLayout({ children }: { children: ReactNode }) {
               {sidebarLinks.map((l, i) => {
                 const Icon = l.icon;
                 return (
-                  <Link
+                  <NavLink
                     key={i}
                     to={l.to}
-                    activeOptions={l.exact ? { exact: true } : undefined}
-                    activeProps={{ className: "active" }}
-                    className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-muted-foreground transition hover:bg-surface-2/60 hover:text-foreground ${
-                      l.soon ? "opacity-50" : ""
-                    } [&.active]:bg-primary/10 [&.active]:text-primary [&.active]:border [&.active]:border-primary/30`}
+                    end={l.exact}
+                    className={({ isActive }) =>
+                      sidebarLinkClass(isActive, l.soon)
+                    }
                   >
                     <Icon className="h-4 w-4" />
                     {l.label}
-                  </Link>
+                  </NavLink>
                 );
               })}
             </nav>

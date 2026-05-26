@@ -1,9 +1,20 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
 
 export function Logo({ className = "" }: { className?: string }) {
   return (
-    <Link to="/" className={`flex items-center gap-2.5 ${className}`}>
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" className="text-primary">
+    <Link
+      to="/"
+      className={`flex items-center gap-2.5 ${className}`}
+      aria-label="CryptoInsight Hub Home"
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        className="text-primary"
+        aria-hidden
+      >
         <path
           d="M12 2L21 7v10l-9 5-9-5V7l9-5z"
           stroke="currentColor"
