@@ -14,7 +14,8 @@ import PricesPage from "@/pages/Prices";
 import RoadmapPage from "@/pages/Roadmap";
 import LoginPage from "@/pages/Login";
 import RegisterPage from "@/pages/Register";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import DashboardPage from "@/pages/Dashboard";
+import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import {
   Activity,
@@ -262,23 +263,6 @@ function HomePage() {
     <SiteLayout>
       <Hero />
       <IntelligenceFeed />
-    </SiteLayout>
-  );
-}
-
-function DashboardPage() {
-  usePageMeta("Dashboard — CryptoInsight Hub");
-  const { user } = useAuth();
-  return (
-    <SiteLayout>
-      <section className="mx-auto max-w-5xl px-6 py-20">
-        <h1 className="font-display text-3xl font-semibold">
-          Welcome, {user?.username}
-        </h1>
-        <p className="mt-4 text-muted-foreground">
-          This route is protected — only authenticated users can see it.
-        </p>
-      </section>
     </SiteLayout>
   );
 }

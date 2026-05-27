@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { Lock, Mail, UserPlus, User } from "lucide-react";
 import { SiteLayout } from "@/components/site/SiteLayout";
+import { AuthField } from "@/components/auth/AuthField";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useAuth } from "@/context/AuthContext";
 import { ApiError } from "@/lib/api";
@@ -105,7 +106,7 @@ export default function RegisterPage() {
             </div>
 
             <form className="mt-8 space-y-5" onSubmit={onSubmit} noValidate>
-              <Field
+              <AuthField
                 id="email"
                 label="Email"
                 icon={<Mail className="h-4 w-4" />}
@@ -116,7 +117,7 @@ export default function RegisterPage() {
                 required
                 maxLength={254}
               />
-              <Field
+              <AuthField
                 id="username"
                 label="Username"
                 icon={<User className="h-4 w-4" />}
@@ -127,7 +128,7 @@ export default function RegisterPage() {
                 maxLength={32}
                 help="3–32 chars: letters, digits, _ . -"
               />
-              <Field
+              <AuthField
                 id="password"
                 label="Password"
                 icon={<Lock className="h-4 w-4" />}
@@ -139,7 +140,7 @@ export default function RegisterPage() {
                 maxLength={128}
                 help="Min 12 chars with upper, lower, digit, symbol."
               />
-              <Field
+              <AuthField
                 id="confirm"
                 label="Confirm password"
                 icon={<Lock className="h-4 w-4" />}
@@ -182,56 +183,3 @@ export default function RegisterPage() {
   );
 }
 
-function Field({
-  id,
-  label,
-  icon,
-  value,
-  onChange,
-  type = "text",
-  autoComplete,
-  required,
-  maxLength,
-  help,
-}: {
-  id: string;
-  label: string;
-  icon: React.ReactNode;
-  value: string;
-  onChange: (v: string) => void;
-  type?: string;
-  autoComplete?: string;
-  required?: boolean;
-  maxLength?: number;
-  help?: string;
-}) {
-  return (
-    <div>
-      <label
-        htmlFor={id}
-        className="mb-1.5 block text-xs font-medium tracking-[0.12em] text-muted-foreground"
-      >
-        {label.toUpperCase()}
-      </label>
-      <div className="relative">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-          {icon}
-        </span>
-        <input
-          id={id}
-          name={id}
-          type={type}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          required={required}
-          maxLength={maxLength}
-          className="w-full rounded-md border border-border bg-surface-2/60 px-9 py-2.5 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-        />
-      </div>
-      {help && (
-        <p className="mt-1.5 text-[11px] text-muted-foreground">{help}</p>
-      )}
-    </div>
-  );
-}
