@@ -12,6 +12,10 @@ import AnalysisPage from "@/pages/Analysis";
 import LearningPage from "@/pages/Learning";
 import PricesPage from "@/pages/Prices";
 import RoadmapPage from "@/pages/Roadmap";
+import LoginPage from "@/pages/Login";
+import RegisterPage from "@/pages/Register";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import {
   Activity,
   ArrowRight,
@@ -262,6 +266,23 @@ function HomePage() {
   );
 }
 
+function DashboardPage() {
+  usePageMeta("Dashboard — CryptoInsight Hub");
+  const { user } = useAuth();
+  return (
+    <SiteLayout>
+      <section className="mx-auto max-w-5xl px-6 py-20">
+        <h1 className="font-display text-3xl font-semibold">
+          Welcome, {user?.username}
+        </h1>
+        <p className="mt-4 text-muted-foreground">
+          This route is protected — only authenticated users can see it.
+        </p>
+      </section>
+    </SiteLayout>
+  );
+}
+
 function NotFoundPage() {
   usePageMeta("404 — CryptoInsight Hub");
   return (
@@ -294,16 +315,28 @@ function ScrollToTopOnNavigation() {
 
 export default function App() {
   return (
-    <Router>
-      <ScrollToTopOnNavigation />
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/analysis" element={<AnalysisPage />} />
-        <Route path="/prices" element={<PricesPage />} />
-        <Route path="/learning" element={<LearningPage />} />
-        <Route path="/roadmap" element={<RoadmapPage />} />
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <ScrollToTopOnNavigation />
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/analysis" element={<AnalysisPage />} />
+          <Route path="/prices" element={<PricesPage />} />
+          <Route path="/learning" element={<LearningPage />} />
+          <Route path="/roadmap" element={<RoadmapPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
