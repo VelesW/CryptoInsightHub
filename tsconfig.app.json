@@ -6,8 +6,6 @@
     "module": "esnext",
     "types": ["vite/client"],
     "skipLibCheck": true,
-
-    /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "verbatimModuleSyntax": true,
@@ -18,8 +16,7 @@
     "paths": {
       "@/*": ["src/*"],
     },
-
-    /* Linting */
+    "ignoreDeprecations": "6.0",
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
