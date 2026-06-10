@@ -1,21 +1,21 @@
 # Multi-stage Dockerfile for Railway deployment
 # - Stage 1: build the Vite React app with Node
-# - Stage 2: serve the built `dist/` with Caddy (uses the Caddyfile that reads $PORT)
+# - Stage 2: serve the built `dist/` with Caddy (Caddyfile is embedded)
 #
-# Railway will set the $PORT environment variable at runtime. The Caddyfile
-# included in the repo should reference that ($PORT) so Caddy listens on the
-# assigned port (example Caddyfile uses :{$PORT:3000}).
+# Railway will set the $PORT environment variable at runtime. The embedded
+# Caddyfile binds to :{$PORT:3000} so that it uses Railway's provided port
+# (falls back to 3000 locally).
 #
 # To build locally:
+#   cd cryptoinsighthub
 #   docker build -t cryptoinsighthub:latest .
+#
 # To run locally (quick test):
 #   docker run -e PORT=3000 -p 3000:3000 cryptoinsighthub:latest
-#
-# The image expects that `npm run build` produces a `dist/` directory (Vite default).
 
-############################
+########################################
 # Stage 1: Build
-############################
+########################################
 FROM node:18-alpine AS builder
 
 # Reduce unnecessary npm logs in build output
@@ -25,53 +25,118 @@ ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
 
 WORKDIR /app
 
-# Install build tools used by some packages (kept minimal)
+# Some packages require build tools; keep this minimal
 RUN apk add --no-cache python3 make g++
 
-# Copy package manifests first to leverage Docker cache
-COPY package.json package-lock.json ./
+# Copy package manifests first for caching; works whether package-lock.json exists or not
+COPY package*.json ./
 
-# Install deps (full install for build)
+# Defensive check to surface missing package.json problems early
+RUN [ -f package.json ] || (echo "package.json not found in build context" && exit 1)
+
+# Install dependencies
 RUN npm ci --silent
 
-# Copy the rest of the source and build
+# Copy source and build
 COPY . .
 
-# Ensure the TypeScript build (if present) and Vite build run
-# The project's package.json should provide suitable "build" script
+# Build the app (expects `vite build` to emit dist/)
 RUN npm run build
 
-############################
+########################################
 # Stage 2: Production image with Caddy
-############################
-FROM caddy:2-alpine
+########################################
+FROM caddy:2-alpine AS runner
 
-# Helpful metadata
 LABEL org.opencontainers.image.title="CryptoInsightHub" \
       org.opencontainers.image.description="Vite + React app served with Caddy (Railway-optimized)" \
-      org.opencontainers.image.authors="(maintainer)"
+      org.opencontainers.image.authors="maintainer"
 
-# Default workdir where we'll place the static files
+# Where static files will live in the final image
 WORKDIR /srv
 
-# Copy the Caddyfile from the build context to Caddy's default config location.
-# The project's Caddyfile should be configured to listen on :{$PORT:3000}
-# so Railway's provided $PORT is used at runtime.
-COPY Caddyfile /etc/caddy/Caddyfile
+# Create an embedded Caddyfile so the image build does not rely on COPY context
+# The Caddyfile listens on :{$PORT:3000} (Railway sets $PORT at runtime).
+RUN cat > /etc/caddy/Caddyfile <<'CADDY'
+{
+    admin off
+    persist_config off
+    auto_https off
 
-# Format the Caddyfile to validate it and normalize whitespace (non-fatal)
-# If `caddy fmt` isn't available for some reason, the command failing should not
-# break the build – that's why `|| true` is used.
+    log {
+        output stdout
+        format json
+    }
+
+    servers {
+        # trust common private ranges including carrier-grade NAT
+        trusted_proxies static private_ranges 100.64.0.0/10
+    }
+}
+
+:{$PORT:3000} {
+    # JSON access logs to stdout
+    log {
+        output stdout
+        format json
+    }
+
+    # Simple health endpoint for platform probes
+    @health {
+        path /health
+    }
+    handle @health {
+        respond "ok" 200 {
+            content_type text/plain
+        }
+    }
+
+    # Serve files from the built dist directory
+    root * /srv/dist
+
+    # Compression
+    encode gzip zstd
+
+    # Cache fingerprinted assets long-term
+    @hashedAssets {
+        path_regexp hashedAssets \.(?:css|js|json|map|xml|txt|svg|woff2?|woff|ttf|eot)$
+    }
+    header @hashedAssets Cache-Control "public, max-age=31536000, immutable"
+
+    # Ensure HTML is not aggressively cached so deployments update correctly
+    @html {
+        path_regexp htmlPaths \.html$
+    }
+    header @html Cache-Control "no-store, must-revalidate"
+
+    # Basic security headers
+    header * {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer-when-downgrade"
+        X-XSS-Protection "1; mode=block"
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+    }
+
+    # Serve static files; SPA fallback to index.html
+    file_server
+    try_files {path} /index.html
+}
+CADDY
+
+# Validate / format the Caddyfile (non-fatal)
 RUN caddy fmt --overwrite /etc/caddy/Caddyfile || true
 
 # Copy built static assets from the builder stage
 COPY --from=builder /app/dist /srv/dist
 
-# Expose a reasonable default port (Railway will override via $PORT env).
-# The Caddyfile should bind to the env var; exposing this port here documents intent.
+# Default runtime port env var (Railway will override with its assigned port)
 ENV PORT=3000
 EXPOSE 3000
 
-# Use Caddy to run with the provided Caddyfile.
-# The Caddyfile is expected to bind to :{$PORT:3000} so Railway's $PORT works.
+# Optional healthcheck to help platforms detect container health
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD wget -qO- "http://127.0.0.1:${PORT:-3000}/health" || exit 1
+
+# Run Caddy using the embedded Caddyfile
 CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
