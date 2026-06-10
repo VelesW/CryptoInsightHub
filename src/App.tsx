@@ -6,6 +6,8 @@ import {
   Link,
   useLocation,
 } from "react-router-dom";
+import { analytics } from "@/lib/firebase";
+import { logEvent } from "firebase/analytics";
 import { SiteLayout } from "@/components/site/SiteLayout";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import AnalysisPage from "@/pages/Analysis";
@@ -32,6 +34,20 @@ const stats = [
   { label: "Protocols Tracked", value: "845", tone: "fg" as const },
   { label: "Global Market Cap", value: "$1.6T", tone: "amber" as const },
 ];
+
+function FirebaseAnalyticsTracker() {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (analytics) {
+      logEvent(analytics, 'page_view', {
+        page_path: location.pathname + location.search,
+      });
+    }
+  }, [location])
+
+  return null;
+}
 
 function Hero() {
   return (
@@ -302,6 +318,7 @@ export default function App() {
     <AuthProvider>
       <Router>
         <ScrollToTopOnNavigation />
+        <FirebaseAnalyticsTracker />
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/analysis" element={<AnalysisPage />} />
