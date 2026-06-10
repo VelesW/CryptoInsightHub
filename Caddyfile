@@ -1,37 +1,92 @@
-# global options
 {
-    admin off # there's no need for the admin api in railway's environment
-    persist_config off # storage isn't persistent anyway
-    auto_https off # railway handles https for us, this would cause issues if left enabled
-    # runtime logs
+    # Railway-friendly global options
+    # - admin disabled: Railway manages the runtime and no admin endpoint is required
+    # - persist_config disabled: container storage isn't persistent on Railway runners
+    # - auto_https disabled: Railway provides TLS termination for you
+    admin off
+    persist_config off
+    auto_https off
+
+    # Use machine-friendly JSON logs (recommended for platform log ingestion)
     log {
-        format json # set runtime log format to json mode
+        output stdout
+        format json
     }
-    # server options
+
+    # Tell Caddy which incoming proxies are trusted.
+    # Railway runs behind platform proxies; this enables correct client IP handling.
+    # The `private_ranges` keyword expands to common RFC1918 ranges; include 100.64.0.0/10
+    # to cover carrier-grade NAT ranges used by many providers.
     servers {
-        trusted_proxies static private_ranges 100.0.0.0/8 # trust railway's proxy
+        trusted_proxies static private_ranges 100.64.0.0/10
     }
 }
 
-# site block, listens on the $PORT environment variable, automatically assigned by railway
+# Site block: listen on $PORT (Railway provides this environment variable)
+# Default to 3000 locally if PORT is not set.
 :{$PORT:3000} {
-    # access logs
+    # Ensure access logs are JSON too
     log {
-        format json # set access log format to json mode
+        output stdout
+        format json
     }
 
-    # health check for railway
-    rewrite /health /*
+    # Minimal health endpoint used by Railway for readiness checks
+    # Responds with a 200 and a short body so platform health checks succeed quickly.
+    @health {
+        path /health
+    }
+    handle @health {
+        respond "ok" 200 {
+            content_type text/plain
+        }
+    }
 
-    # serve from the 'dist' folder (Vite builds into the 'dist' folder)
+    # Serve files out of the 'dist' folder (Vite's default build output).
+    # Use a relative path so the same Caddyfile works both locally and in the Docker container
+    # when the dist folder is at the same level as this Caddyfile.
     root * dist
 
-    # enable gzipping responses
-    encode gzip
+    # Enable compression to reduce bandwidth
+    encode gzip zstd
 
-    # serve files from 'dist'
+    # Long-cache fingerprinted static assets (hashed filenames) - immutable
+    @hashedAssets {
+        path_regexp hashedAssets \.(?:css|js|json|map|xml|txt|svg|woff2?|woff|ttf|eot)$
+    }
+    header @hashedAssets Cache-Control "public, max-age=31536000, immutable"
+
+    # Ensure HTML is not cached aggressively (so new deployments are picked up)
+    @html {
+        path_regexp htmlPaths \.html$
+    }
+    header @html Cache-Control "no-store, must-revalidate"
+
+    # Basic security headers for all responses
+    # Adjust these headers to fit your application requirements.
+    header * {
+        X-Frame-Options "DENY"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "no-referrer-when-downgrade"
+        X-XSS-Protection "1; mode=block"
+        Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+    }
+
+    # Serve static files. If a file is not found, fall back to index.html to support client-side routing.
     file_server
 
-    # if path doesn't exist, redirect it to 'index.html' for client side routing
+    # SPA fallback for client-side routing (Vite/React)
     try_files {path} /index.html
+
+    # Optional: reduce verbosity for asset requests in access logs
+    @assets {
+        path_regexp assetPaths \.(?:css|js|png|jpg|jpeg|gif|svg|webp|woff2?|woff|ttf|eot|map)$
+    }
+    # You can turn off access logging for these routes by uncommenting the following:
+    # log {
+    #     level ERROR
+    #     output stdout
+    #     format json
+    #     except @assets
+    # }
 }

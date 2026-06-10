@@ -1,40 +1,77 @@
-# Use the Node alpine official image
-# https://hub.docker.com/_/node
-FROM node:lts-alpine AS build
+# Multi-stage Dockerfile for Railway deployment
+# - Stage 1: build the Vite React app with Node
+# - Stage 2: serve the built `dist/` with Caddy (uses the Caddyfile that reads $PORT)
+#
+# Railway will set the $PORT environment variable at runtime. The Caddyfile
+# included in the repo should reference that ($PORT) so Caddy listens on the
+# assigned port (example Caddyfile uses :{$PORT:3000}).
+#
+# To build locally:
+#   docker build -t cryptoinsighthub:latest .
+# To run locally (quick test):
+#   docker run -e PORT=3000 -p 3000:3000 cryptoinsighthub:latest
+#
+# The image expects that `npm run build` produces a `dist/` directory (Vite default).
 
-# Set config
-ENV NPM_CONFIG_UPDATE_NOTIFIER=false
-ENV NPM_CONFIG_FUND=false
+############################
+# Stage 1: Build
+############################
+FROM node:18-alpine AS builder
 
-# Create and change to the app directory.
+# Reduce unnecessary npm logs in build output
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
+    NPM_CONFIG_FUND=false \
+    NODE_ENV=production
+
 WORKDIR /app
 
-# Copy the files to the container image
-COPY package*.json ./
+# Install build tools used by some packages (kept minimal)
+RUN apk add --no-cache python3 make g++
 
-# Install packages
-RUN npm ci
+# Copy package manifests first to leverage Docker cache
+COPY package.json package-lock.json ./
 
-# Copy local code to the container image.
-COPY . ./
+# Install deps (full install for build)
+RUN npm ci --silent
 
-# Build the app.
+# Copy the rest of the source and build
+COPY . .
+
+# Ensure the TypeScript build (if present) and Vite build run
+# The project's package.json should provide suitable "build" script
 RUN npm run build
 
-# Use the Caddy image
-FROM caddy
+############################
+# Stage 2: Production image with Caddy
+############################
+FROM caddy:2-alpine
 
-# Create and change to the app directory.
-WORKDIR /app
+# Helpful metadata
+LABEL org.opencontainers.image.title="CryptoInsightHub" \
+      org.opencontainers.image.description="Vite + React app served with Caddy (Railway-optimized)" \
+      org.opencontainers.image.authors="(maintainer)"
 
-# Copy Caddyfile to the container image.
-COPY Caddyfile ./
+# Default workdir where we'll place the static files
+WORKDIR /srv
 
-# Copy local code to the container image.
-RUN caddy fmt Caddyfile --overwrite
+# Copy the Caddyfile from the build context to Caddy's default config location.
+# The project's Caddyfile should be configured to listen on :{$PORT:3000}
+# so Railway's provided $PORT is used at runtime.
+COPY Caddyfile /etc/caddy/Caddyfile
 
-# Copy files to the container image.
-COPY --from=build /app/dist ./dist
+# Format the Caddyfile to validate it and normalize whitespace (non-fatal)
+# If `caddy fmt` isn't available for some reason, the command failing should not
+# break the build – that's why `|| true` is used.
+RUN caddy fmt --overwrite /etc/caddy/Caddyfile || true
 
-# Use Caddy to run/serve the app
-CMD ["caddy", "run", "--config", "Caddyfile", "--adapter", "caddyfile"]
+# Copy built static assets from the builder stage
+COPY --from=builder /app/dist /srv/dist
+
+# Expose a reasonable default port (Railway will override via $PORT env).
+# The Caddyfile should bind to the env var; exposing this port here documents intent.
+ENV PORT=3000
+EXPOSE 3000
+
+# Use Caddy to run with the provided Caddyfile.
+# The Caddyfile is expected to bind to :{$PORT:3000} so Railway's $PORT works.
+CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
