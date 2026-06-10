@@ -1,0 +1,83 @@
+# Node / package artifacts
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build outputs
+dist
+build
+.next
+.out
+.vite
+*.tsbuildinfo
+
+# Local env files (shouldn't be baked into images)
+.env
+.env.*.local
+.env.local
+.env.development
+.env.test
+*.local
+.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+logs
+*.log
+*.tmp
+tmp/
+temp/
+coverage/
+reports/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Git / CI
+.git
+.gitignore
+.gitattributes
+.github/
+
+# Docker files / compose (not needed inside image build context)
+docker-compose*.yml
+*.dockerignore
+
+# Misc caches
+.cache/
+.cache-loader/
+parcel-cache/
+node-repl-history
+
+# Build tools
+dist-ssr/
+dist-server/
+build/
+out/
+
+# Lockfile exceptions: keep package.json & package-lock.json in context
+# (Do not ignore them)
+!.dockerignore
+!package.json
+!package-lock.json
+
+# Vim swap files
+.*.swp
+*.swp
+
+# Ignore local OS-specific files
+*.log
+*.pid
+*.seed
+
+# Prevent accidentally including large local assets or secrets folders
+secrets/
+private/
