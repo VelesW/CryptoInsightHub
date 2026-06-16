@@ -7,10 +7,18 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ApiError, authApi, ensureCsrfToken, type AuthUser } from "@/lib/api";
+import { auth } from "@/lib/firebase"
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  updateProfile,
+  type User as FirebaseUser
+} from "firebase/auth";
 
 interface AuthContextValue {
-  user: AuthUser | null;
+  user: FirebaseUser | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (
@@ -24,51 +32,36 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<FirebaseUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        await ensureCsrfToken();
-        const { user } = await authApi.me();
-        if (!cancelled) setUser(user);
-      } catch (err) {
-        // 401 is the expected anonymous case — swallow it.
-        if (!(err instanceof ApiError) || err.status !== 401) {
-          console.error("auth bootstrap failed", err);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
-    await ensureCsrfToken();
-    const { user } = await authApi.login(email, password);
-    setUser(user);
+    await signInWithEmailAndPassword(auth, email, password);
   }, []);
 
   const register = useCallback(
     async (email: string, username: string, password: string) => {
-      await ensureCsrfToken();
-      const { user } = await authApi.register(email, username, password);
-      setUser(user);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Firebase traktuje displayName osobno, można go zaktualizować po utworzeniu konta
+      await updateProfile(userCredential.user, {
+        displayName: username
+      });
+      setUser(auth.currentUser); 
     },
     [],
   );
 
   const logout = useCallback(async () => {
-    try {
-      await authApi.logout();
-    } finally {
-      setUser(null);
-    }
+    await firebaseSignOut(auth);
   }, []);
 
   const value = useMemo(

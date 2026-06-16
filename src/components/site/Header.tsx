@@ -48,7 +48,7 @@ export function Header() {
                 className="hidden items-center gap-1.5 text-sm hover:text-foreground sm:inline-flex"
               >
                 <UserCircle2 className="h-4 w-4" />
-                {user.username}
+                {user.displayName}
               </Link>
               <button
                 aria-label="Sign out"
