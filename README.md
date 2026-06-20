@@ -1,73 +1,120 @@
-# React + TypeScript + Vite
+# 📈 Crypto Insight Hub
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Crypto Insight Hub to kompleksowa platforma internetowa stworzona dla entuzjastów kryptowalut. Aplikacja umożliwia śledzenie cen na żywo, przeprowadzanie zaawansowanej analizy rynkowej, zarządzanie własnym portfolio (Dashboard) oraz zdobywanie nowej wiedzy za pomocą modułu edukacyjnego.
 
-Currently, two official plugins are available:
+## ✨ Główne funkcje
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Dashboard:** Spersonalizowany panel użytkownika do śledzenia ulubionych kryptowalut.
+- **Analiza rynkowa (Analysis):** Zaawansowane dane i wykresy ułatwiające podejmowanie decyzji inwestycyjnych.
+- **Ceny na żywo (Prices):** Bieżące notowania najważniejszych kryptowalut na rynku.
+- **Moduł edukacyjny (Learning):** Materiały pomocne we wprowadzaniu nowych użytkowników w świat krypto.
+- **Autoryzacja użytkowników:** Bezpieczne logowanie i rejestracja (wspierane przez Firebase/JWT).
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 📸 Zrzuty ekranu
 
-## Expanding the ESLint configuration
+### 💻 Wygląd aplikacji
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Tutaj znajduje się podgląd głównych widoków naszej platformy.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+![Widok Główny - Strona Główna](docs/screenshots/main.png)
+*Strona główna strony, prezentująca przegląd rynku i statystyki.*
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+![Widok Analizy](docs/screenshots/analysis.png)
+*Widok szczegółowej analizy wybranej kryptowaluty z wykresami.*
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+![Widok Edukacyjny](docs/screenshots/learning.png)
+*Moduł nauki (Learning) ułatwiający wejście w świat technologii blockchain.*
+
+### 📊 Analityka (Google Analytics)
+
+Monitorujemy ruch na stronie i zaangażowanie użytkowników, aby stale ulepszać platformę.
+
+![Google Analytics - Przegląd ruchu](docs/screenshots/active_users.png)
+*Raport przedstawiający liczbę aktywnych użytkowników.*
+
+### 🔥 Zachowania Użytkowników (Hotjar)
+
+Wykorzystujemy narzędzie Hotjar, aby optymalizować UX/UI na podstawie map cieplnych oraz nagrań sesji.
+
+![Hotjar - RUM - Core Web Vitals](docs/screenshots/hotjar.png)
+*Strona Core Web Vitals prezentująca informacje związane z technicznymi szczegółami dostępu do strony, na przykład czasu oczekiwania na odpowiedź aplikacji.*
+
+---
+
+## 🛠️ Technologie
+
+Projekt został zbudowany z wykorzystaniem nowoczesnego stosu technologicznego:
+
+**Frontend:**
+- [React.js](https://reactjs.org/) + [Vite](https://vitejs.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/)
+- [shadcn/ui](https://ui.shadcn.com/) (komponenty interfejsu)
+
+**Backend:**
+- Node.js & Express (katalog `/server`)
+- Firebase (Autoryzacja / DB)
+- JWT (Bezpieczeństwo)
+
+---
+
+## 🚀 Uruchomienie projektu lokalnie
+
+### Wymagania
+- Node.js (wersja 16.x lub nowsza)
+- npm, yarn lub pnpm
+
+
+### 1. Klonowanie repozytorium
+```bash
+git clone https://github.com/VelesW/CryptoInsightHub.git
+cd cryptoinsighthub
+```
+### 2. Konfiguracja Frontendu
+```bash
+# Instalacja zależności
+npm install
+
+# Uruchomienie serwera deweloperskiego (Vite)
+npm run dev
+```
+Aplikacja frontendowa będzie dostępna pod adresem: http://localhost:5173
+
+### 3. Konfiguracja Backendu (Serwera)
+Otwórz nową kartę w terminalu i przejdź do folderu serwera:
+```bash
+cd server
+
+# Skopiuj plik z przykładowymi zmiennymi środowiskowymi
+cp .env.example .env
+# Pamiętaj, aby uzupełnić plik .env swoimi kluczami!
+
+# Instalacja zależności
+npm install
+
+# Uruchomienie serwera backendowego
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## 📂 Struktura katalogów
+```bash
+CryptoInsightHub/
+├── public/               # Statyczne zasoby (ikony, favicon)
+├── src/                  # Kod źródłowy Frontendu
+│   ├── assets/           # Obrazki i grafiki
+│   ├── components/       # Komponenty UI wielokrotnego użytku (UI, Site, Auth)
+│   ├── context/          # React Context (np. AuthContext)
+│   ├── hooks/            # Własne hooki React (np. use-mobile)
+│   ├── lib/              # Funkcje pomocnicze, konfiguracja API i Firebase
+│   └── pages/            # Widoki aplikacji (Dashboard, Analysis, Prices, Login, itp.)
+├── server/               # Kod źródłowy Backendu (Node.js/Express)
+│   ├── src/              # Kod serwera, middleware, trasy logowania
+│   └── .env.example      # Przykładowe zmienne środowiskowe serwera
+├── package.json          # Zależności projektu frontendowego
+└── tailwind.config.cjs   # Konfiguracja Tailwind CSS
 ```
+## 📄 Licencja
+
+Ten projekt udostępniany jest na warunkach licencji określonej w pliku LICENSE.
